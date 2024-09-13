@@ -1,11 +1,21 @@
-import SignUpForm from '@/components/signup-form';
+'use client';
 
-export default function SignUpPage() {
+import SignupForm from '@/components/signup-form';
+import { useEffect } from 'react';
+
+export default function SignupPage() {
+  useEffect(() => {
+    document.body.classList.add('dark');
+    return () => {
+      document.body.classList.remove('dark');
+    }
+  }, []);
+  
   return (
-    <main className="flex items-center justify-center md:h-screen">
-      <div className="relative mx-auto flex w-full max-w-[400px] flex-col space-y-2.5 p-4 md:-mt-32">
-        <SignUpForm />
+    <div className="flex h-[calc(100vh-4rem)] items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-sm md:max-w-3xl">
+        <SignupForm />
       </div>
-    </main>
-  );
+    </div>
+  )
 }

@@ -10,14 +10,14 @@ export default function LoginForm({
 }: React.ComponentProps<"div">) {
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden shadow-[0_0_25px_rgba(255,255,255,0.15)] transition-shadow duration-300 hover:shadow-[0_0_35px_rgba(255,255,255,0.2)] border-zinc-800">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form className="p-6 md:p-8">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
-                <h1 className="text-2xl font-bold">Welcome back</h1>
+                <h1 className="text-2xl font-bold">Welcome back!</h1>
                 <p className="text-balance text-muted-foreground">
-                  Login to your Acme Inc account
+                  Login to your Market Lens account
                 </p>
               </div>
               <div className="grid gap-2">
@@ -25,7 +25,7 @@ export default function LoginForm({
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="b5ling@uwaterloo.ca"
                   required
                 />
               </div>
@@ -80,24 +80,25 @@ export default function LoginForm({
               </div>
               <div className="text-center text-sm">
                 Don&apos;t have an account?{" "}
-                <a href="#" className="underline underline-offset-4">
+                <a href="/signup" className="underline underline-offset-4">
                   Sign up
                 </a>
               </div>
             </div>
           </form>
-          <div className="relative hidden bg-muted md:block">
+          <div className="relative hidden animate-gradient bg-gradient-to-br from-zinc-900 via-zinc-800 via-zinc-700 to-zinc-900 md:block">
             <img
-              src="/placeholder.svg"
+              src="/blackbear.svg"
               alt="Image"
-              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+              className="absolute inset-0 h-full w-full object-contain p-8 opacity-90 transition-all duration-300 hover:opacity-100 dark:brightness-[0.4] dark:grayscale-[50%]"
             />
           </div>
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+        By clicking continue, you agree to our <a href="https://tinyurl.com/9pf6huep" target="_blank" rel="noopener noreferrer">Terms of Service</a>{" "}
+        and <a href="https://tinyurl.com/9pf6huep" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+        {/* Enjoy the rick roll! */}
       </div>
     </div>
   )
