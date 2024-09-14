@@ -79,18 +79,15 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 @keyframes gradient {
-  0% {
-    background-position: 0% 50%;
+  0%, 100% {
+    background-position: center 0%;
   }
   50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
+    background-position: center 100%;
   }
 }
 
 .animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient 15s ease infinite;
+  background-size: 100% 300%;
+  animation: gradient 6s ease-in-out infinite;
 }
