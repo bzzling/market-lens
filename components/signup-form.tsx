@@ -28,20 +28,16 @@ export default function SignupForm({
     try {
       const signUpData = await signUpWithEmail(email, password, name)
       
-      // Auto login after signup
       if (signUpData?.user) {
-        const { data: signInData } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        
-        if (signInData.session) {
-          router.refresh()
-          router.push("/dashboard")
-        }
+        router.push("/login?message=Please check your email to verify your account")
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign up")
+      const message = err instanceof Error ? err.message : "Failed to sign up"
+      if (message.includes('security purposes')) {
+        setError("Please wait a moment before trying again")
+      } else {
+        setError(message)
+      }
     } finally {
       setLoading(false)
     }

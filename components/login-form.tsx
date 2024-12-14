@@ -4,8 +4,8 @@ import { Card, CardContent } from "@/components/ui/login-form/card"
 import { Input } from "@/components/ui/login-form/input"
 import { Label } from "@/components/ui/login-form/label"
 import { useAuth } from "@/hooks/useAuth"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function LoginForm({
   className,
@@ -14,9 +14,18 @@ export default function LoginForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
   const { signInWithEmail, signInWithGithub, resetPassword } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const message = searchParams.get('message')
+    if (message) {
+      setMessage(message)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,21 +77,22 @@ export default function LoginForm({
   }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-8 max-w-5xl mx-auto w-full", className)} {...props}>
       <Card className="overflow-hidden shadow-[0_0_25px_rgba(255,255,255,0.15)] transition-shadow duration-300 hover:shadow-[0_0_35px_rgba(255,255,255,0.2)] border-zinc-800">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form className="p-6 md:p-8" onSubmit={handleSubmit}>
+          <form className="p-8 md:p-10" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
-                <h1 className="text-2xl font-bold">Login</h1>
+                <h1 className="text-2xl font-bold">Log in</h1>
                 <p className="text-balance text-muted-foreground">
-                  Enter your credentials
+                  Welcome back
                 </p>
                 <div className="h-6 mt-2">
                   {error && (
-                    <div className="text-sm text-red-500">
-                      {error}
-                    </div>
+                    <div className="text-sm text-red-500">{error}</div>
+                  )}
+                  {message && (
+                    <div className="text-sm text-green-500">{message}</div>
                   )}
                 </div>
               </div>
