@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/login-form/label"
 import { useAuth } from "@/hooks/useAuth"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase"
 
 export default function SignupForm({
   className,
@@ -25,8 +26,20 @@ export default function SignupForm({
     setLoading(true)
 
     try {
-      await signUpWithEmail(email, password, name)
-      router.push("/dashboard")
+      const signUpData = await signUpWithEmail(email, password, name)
+      
+      // Auto login after signup
+      if (signUpData?.user) {
+        const { data: signInData } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        
+        if (signInData.session) {
+          router.refresh()
+          router.push("/dashboard")
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sign up")
     } finally {

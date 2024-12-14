@@ -89,14 +89,21 @@ export function useAuth() {
   }
 
   const signInWithGithub = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
-    if (error) throw error
-    return data
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'read:user user:email',
+        }
+      })
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('GitHub sign in error:', error)
+      throw error
+    }
   }
 
   const signOut = async () => {

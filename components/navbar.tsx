@@ -10,6 +10,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const { signOut } = useAuth();
@@ -17,22 +18,40 @@ export default function Navbar() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsLoggedIn(!!session);
+      } catch (error) {
+        console.error('Session check error:', error);
+        setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setIsLoggedIn(!!session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [supabase.auth]);
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+      setIsLoggedIn(false);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <nav className="fixed top-0 w-full bg-black backdrop-blur-md z-50 border-b border-gray-800">

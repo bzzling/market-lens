@@ -6,28 +6,33 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-  console.log('Middleware - Current path:', req.nextUrl.pathname)
-  console.log('Middleware - Session exists:', !!session)
+    // Force refresh session if it exists
+    if (session) {
+      await supabase.auth.getUser()
+    }
 
-  // If no session and trying to access protected route
-  if (!session && req.nextUrl.pathname.startsWith('/dashboard')) {
-    console.log('Middleware - Redirecting to login: No session')
+    // Protected routes
+    if (!session && req.nextUrl.pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
+
+    // Auth routes when already logged in
+    if (session && ['/login', '/signup', '/'].includes(req.nextUrl.pathname)) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+
+    return res
+  } catch (error) {
+    console.error('Middleware error:', error)
     return NextResponse.redirect(new URL('/login', req.url))
   }
-
-  // If session exists and trying to access auth pages
-  if (session && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/signup')) {
-    console.log('Middleware - Redirecting to dashboard: Session exists')
-    return NextResponse.redirect(new URL('/dashboard', req.url))
-  }
-
-  return res
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup'],
+  matcher: ['/', '/dashboard/:path*', '/login', '/signup', '/auth/callback']
 } 
