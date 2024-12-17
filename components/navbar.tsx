@@ -9,10 +9,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { signOut } = useAuth();
   const supabase = createClientComponentClient();
 
@@ -20,7 +20,9 @@ export default function Navbar() {
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        setIsLoggedIn(!!session);
+        if (pathname !== '/login') {
+          setIsLoggedIn(!!session);
+        }
       } catch (error) {
         console.error('Session check error:', error);
         setIsLoggedIn(false);
@@ -32,25 +34,26 @@ export default function Navbar() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setIsLoggedIn(!!session);
+      if (pathname !== '/login') {
+        setIsLoggedIn(!!session);
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, [supabase.auth, pathname]);
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      setIsLoggedIn(false);
     } catch (error) {
       console.error('Sign out error:', error);
     }
   };
 
   if (isLoading) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   return (

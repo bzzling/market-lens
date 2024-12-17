@@ -1,58 +1,54 @@
-import {
-  BanknotesIcon,
-  ClockIcon,
-  UserGroupIcon,
-  InboxIcon,
-} from '@heroicons/react/24/outline';
-import { inter } from '@/app/fonts';
+import { Card } from '@/components/ui/login-form/card';
+import { 
+  LineChart,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight,
+} from 'lucide-react';
 
 const iconMap = {
-  collected: BanknotesIcon,
-  customers: UserGroupIcon,
-  pending: ClockIcon,
-  invoices: InboxIcon,
+  portfolio: LineChart,
+  balance: Wallet,
+  gainers: ArrowUpRight,
+  losers: ArrowDownRight,
 };
 
-export default async function CardWrapper() {
+export default async function DashboardCards() {
+  // These will be replaced with real data later
+  const mockData = {
+    portfolio: { label: 'Portfolio Value', value: '$10,234.23', change: '+3.2%' },
+    balance: { label: 'Cash Balance', value: '$4,321.68', change: null },
+    gainers: { label: 'Top Gainer', value: 'AAPL', change: '+5.6%' },
+    losers: { label: 'Top Loser', value: 'GOOGL', change: '-2.3%' },
+  };
+
   return (
     <>
-      {/* NOTE: Uncomment this code in Chapter 9 */}
-
-      {/* <Card title="Collected" value={totalPaidInvoices} type="collected" />
-      <Card title="Pending" value={totalPendingInvoices} type="pending" />
-      <Card title="Total Invoices" value={numberOfInvoices} type="invoices" />
-      <Card
-        title="Total Customers"
-        value={numberOfCustomers}
-        type="customers"
-      /> */}
+      {Object.entries(mockData).map(([key, data]) => (
+        <Card key={key} className="p-4">
+          <div className="flex items-center justify-between space-x-4">
+            <div className="flex items-center space-x-4">
+              {(() => {
+                const Icon = iconMap[key as keyof typeof iconMap];
+                return <Icon className="h-5 w-5 text-muted-foreground" />;
+              })()}
+              <div className="flex flex-col">
+                <p className="text-sm font-medium leading-none text-muted-foreground">
+                  {data.label}
+                </p>
+                <h3 className="mt-2 font-bold text-2xl">{data.value}</h3>
+                {data.change && (
+                  <p className={`text-sm ${
+                    data.change.startsWith('+') ? 'text-green-500' : 'text-red-500'
+                  }`}>
+                    {data.change}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      ))}
     </>
-  );
-}
-
-export function Card({
-  title,
-  value,
-  type,
-}: {
-  title: string;
-  value: number | string;
-  type: 'invoices' | 'customers' | 'pending' | 'collected';
-}) {
-  const Icon = iconMap[type];
-
-  return (
-    <div className="rounded-xl bg-gray-50 p-2 shadow-sm">
-      <div className="flex p-4">
-        {Icon ? <Icon className="h-5 w-5 text-gray-700" /> : null}
-        <h3 className="ml-2 text-sm font-medium">{title}</h3>
-      </div>
-      <p
-        className={`${inter.className}
-          truncate rounded-xl bg-white px-4 py-8 text-center text-2xl`}
-      >
-        {value}
-      </p>
-    </div>
   );
 }
