@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { inter } from '@/app/fonts';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,38 +18,59 @@ export default function Navbar() {
   const supabase = createClientComponentClient();
 
   useEffect(() => {
+    let mounted = true;
+
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (pathname !== '/login') {
+        if (mounted) {
           setIsLoggedIn(!!session);
+          // If we're on the home page and logged in, redirect to dashboard
+          if (!!session && pathname === '/') {
+            router.push('/dashboard');
+          }
         }
       } catch (error) {
         console.error('Session check error:', error);
-        setIsLoggedIn(false);
+        if (mounted) {
+          setIsLoggedIn(false);
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
     
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (pathname !== '/login') {
+      if (mounted) {
         setIsLoggedIn(!!session);
+        // Handle navigation based on auth state
+        if (!!session && pathname === '/') {
+          router.push('/dashboard');
+        } else if (!session && pathname === '/dashboard') {
+          router.push('/login');
+        }
       }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase.auth, pathname]);
+  }, [supabase.auth, pathname, router]);
 
   const handleSignOut = async () => {
     try {
+      setIsLoading(true);
       await signOut();
+      router.push('/login');
     } catch (error) {
       console.error('Sign out error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -61,16 +83,29 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <Image
-                src="/logo-inverse.png"
-                alt="Market Lens Logo"
-                width={500}
-                height={500}
-                className="h-8 w-8"
-              />
-              <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/dashboard" className="flex items-center">
+                <Image
+                  src="/logo-inverse.png"
+                  alt="Market Lens Logo"
+                  width={500}
+                  height={500}
+                  className="h-8 w-8"
+                />
+                <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
+              </Link>
+            ) : (
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/logo-inverse.png"
+                  alt="Market Lens Logo"
+                  width={500}
+                  height={500}
+                  className="h-8 w-8"
+                />
+                <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
+              </Link>
+            )}
           </div>
           {!isAuthPage && (
             <div className="flex items-center space-x-4">
@@ -78,6 +113,7 @@ export default function Navbar() {
                 <button
                   onClick={handleSignOut}
                   className="bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  disabled={isLoading}
                 >
                   Sign Out
                 </button>

@@ -11,17 +11,14 @@ export async function middleware(req: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession()
 
-    // Force refresh session if it exists
     if (session) {
       await supabase.auth.getUser()
     }
 
-    // Protected routes
     if (!session && req.nextUrl.pathname.startsWith('/dashboard')) {
       return NextResponse.redirect(new URL('/login', req.url))
     }
 
-    // Auth routes when already logged in
     if (session && ['/login', '/signup', '/'].includes(req.nextUrl.pathname)) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }

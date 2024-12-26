@@ -16,8 +16,8 @@ const iconMap = {
 export default async function DashboardCards() {
   // These will be replaced with real data later
   const mockData = {
-    portfolio: { label: 'Portfolio Value', value: '$10,234.23', change: '+3.2%' },
-    balance: { label: 'Cash Balance', value: '$4,321.68', change: null },
+    portfolio: { label: 'Portfolio Value', value: '$22,222.22', change: '+3.2%' },
+    balance: { label: 'Cash Balance', value: '$4,321.68', change: '+6.9%' },
     gainers: { label: 'Top Gainer', value: 'AAPL', change: '+5.6%' },
     losers: { label: 'Top Loser', value: 'GOOGL', change: '-2.3%' },
   };
