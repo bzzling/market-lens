@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/login-form/card';
+import { Card } from '@/components/ui/auth-forms/card';
 import { 
   LineChart,
   Wallet,

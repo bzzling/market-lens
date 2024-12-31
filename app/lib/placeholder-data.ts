@@ -1,5 +1,5 @@
-// Placeholder data for a stock market simulator app
-// Replace with real API data and Supabase integration
+// For now, this is placeholder data
+// I'll replace with real API data and Supabase integration
 
 const users = [
   {

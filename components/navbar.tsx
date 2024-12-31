@@ -13,120 +13,74 @@ export default function Navbar() {
   const router = useRouter();
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const { signOut } = useAuth();
   const supabase = createClientComponentClient();
 
   useEffect(() => {
-    let mounted = true;
-
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (mounted) {
-          setIsLoggedIn(!!session);
-          // If we're on the home page and logged in, redirect to dashboard
-          if (!!session && pathname === '/') {
-            router.push('/dashboard');
-          }
-        }
-      } catch (error) {
-        console.error('Session check error:', error);
-        if (mounted) {
-          setIsLoggedIn(false);
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (mounted) {
-        setIsLoggedIn(!!session);
-        // Handle navigation based on auth state
-        if (!!session && pathname === '/') {
-          router.push('/dashboard');
-        } else if (!session && pathname === '/dashboard') {
-          router.push('/login');
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
+      
+      if (!session && pathname === '/dashboard') {
+        router.push('/login');
       }
     });
 
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, [supabase.auth, pathname, router]);
 
   const handleSignOut = async () => {
     try {
-      setIsLoading(true);
       await signOut();
-      router.push('/login');
+      // Let the auth state change handler handle the navigation
     } catch (error) {
       console.error('Sign out error:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  if (isLoading) {
+  if (isAuthPage) {
     return null;
   }
 
   return (
-    <nav className="fixed top-0 w-full bg-black backdrop-blur-md z-50 border-b border-gray-800">
+    <nav className="fixed top-0 w-full bg-black backdrop-blur-md z-50 border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
+            <Link href={isLoggedIn ? "/dashboard" : "/"} className="flex items-center">
+              <Image
+                src="/logo-inverse.png"
+                alt="Market Lens Logo"
+                width={500}
+                height={500}
+                className="h-8 w-8"
+              />
+              <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
+            </Link>
+          </div>
+          <div className="flex items-center space-x-4">
             {isLoggedIn ? (
-              <Link href="/dashboard" className="flex items-center">
-                <Image
-                  src="/logo-inverse.png"
-                  alt="Market Lens Logo"
-                  width={500}
-                  height={500}
-                  className="h-8 w-8"
-                />
-                <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
-              </Link>
+              <button
+                onClick={handleSignOut}
+                className="bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Sign Out
+              </button>
             ) : (
-              <Link href="/" className="flex items-center">
-                <Image
-                  src="/logo-inverse.png"
-                  alt="Market Lens Logo"
-                  width={500}
-                  height={500}
-                  className="h-8 w-8"
-                />
-                <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
+              <Link 
+                href="/login"
+                className="bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Login
               </Link>
             )}
           </div>
-          {!isAuthPage && (
-            <div className="flex items-center space-x-4">
-              {isLoggedIn ? (
-                <button
-                  onClick={handleSignOut}
-                  className="bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  disabled={isLoading}
-                >
-                  Sign Out
-                </button>
-              ) : (
-                <Link 
-                  href="/login"
-                  className="bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  Login
-                </Link>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </nav>
