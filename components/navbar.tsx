@@ -7,6 +7,18 @@ import { inter } from '@/app/fonts';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import {
+  HomeIcon,
+  DocumentDuplicateIcon,
+  BookOpenIcon,
+} from '@heroicons/react/24/outline';
+import clsx from 'clsx';
+
+const dashboardLinks = [
+  { name: 'Portfolio', href: '/dashboard', icon: HomeIcon },
+  { name: 'Trade', href: '/dashboard/trade', icon: DocumentDuplicateIcon },
+  { name: 'Learn', href: '/dashboard/learn', icon: BookOpenIcon },
+];
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -20,12 +32,11 @@ export default function Navbar() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsLoggedIn(!!session);
       
-      if (!session && pathname === '/dashboard') {
+      if (!session && pathname.startsWith('/dashboard')) {
         router.push('/login');
       }
     });
 
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session);
     });
@@ -38,7 +49,6 @@ export default function Navbar() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      // Let the auth state change handler handle the navigation
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -53,7 +63,6 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href={isLoggedIn ? "/dashboard" : "/"} className="flex items-center">
               <Image
                 src="/logo-inverse.png"
                 alt="Market Lens Logo"
@@ -62,20 +71,52 @@ export default function Navbar() {
                 className="h-8 w-8"
               />
               <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
-            </Link>
           </div>
-          <div className="flex items-center space-x-4">
+
+          {isLoggedIn && (
+            <div className="hidden md:flex items-center space-x-4">
+              {dashboardLinks.map((link) => {
+                const LinkIcon = link.icon;
+                const isActive = pathname === link.href;
+                
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={clsx(
+                      'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                      {
+                        'bg-white text-black hover:bg-gray-100': isActive,
+                        'text-gray-400 hover:bg-zinc-800 hover:text-white': !isActive,
+                      },
+                    )}
+                  >
+                    <LinkIcon className="w-5 h-5" />
+                    <span>{link.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex items-center">
             {isLoggedIn ? (
               <button
                 onClick={handleSignOut}
-                className="bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className={clsx(
+                  'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                  'bg-white text-black hover:bg-gray-100'
+                )}
               >
                 Sign Out
               </button>
             ) : (
               <Link 
                 href="/login"
-                className="bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className={clsx(
+                  'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                  'bg-white text-black hover:bg-gray-100'
+                )}
               >
                 Login
               </Link>
@@ -85,4 +126,4 @@ export default function Navbar() {
       </div>
     </nav>
   );
-} 
+}
