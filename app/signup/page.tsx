@@ -1,7 +1,7 @@
 'use client';
 
 import SignupForm from '@/components/signup-form';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 
 export default function SignupPage() {
   useEffect(() => {
@@ -13,7 +13,9 @@ export default function SignupPage() {
   
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
-      <SignupForm className="w-full max-w-4xl px-4" />
+      <Suspense fallback={<div>Loading...</div>}>
+        <SignupForm className="w-full max-w-4xl px-4" />
+      </Suspense>
     </div>
   )
 }
