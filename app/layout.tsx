@@ -1,7 +1,7 @@
 import '@/app/global.css';
 import { inter } from '@/app/fonts';
-import Navbar from '@/components/navbar';
-import Footer from '@/components/footer';
+import Navbar from '@/app/components/navbar';
+import Footer from '@/app/components/footer';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

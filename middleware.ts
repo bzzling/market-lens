@@ -1,35 +1,51 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { type NextRequest } from 'next/server'
+import { updateSession } from '@/app/utils/supabase/middleware'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+export async function middleware(request: NextRequest) {
+  const res = await updateSession(request)
 
-  try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+  // fetch the pathname
+  const pathname = request.nextUrl.pathname
 
-    if (session) {
-      await supabase.auth.getUser()
-    }
+  // these routes should redirect to dashboard if the user is authenticated
+  const publicRoutes = ['/', '/login', '/signup']
+  const authRoutes = ['/auth/callback']
 
-    if (!session && req.nextUrl.pathname.startsWith('/dashboard')) {
-      return NextResponse.redirect(new URL('/login', req.url))
-    }
-
-    if (session && ['/login', '/signup', '/'].includes(req.nextUrl.pathname)) {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
-    }
-
+  const isAuthenticated = res.headers.get('x-user-authenticated') === 'true'
+  
+  // Allow access to auth routes without redirection
+  if (authRoutes.some(route => pathname.startsWith(route))) {
     return res
-  } catch (error) {
-    console.error('Middleware error:', error)
-    return NextResponse.redirect(new URL('/login', req.url))
   }
+
+  // Allow access to public routes when not authenticated
+  if (!isAuthenticated && publicRoutes.includes(pathname)) {
+    return res
+  }
+
+  // if user authenticated, redirect to dashboard from public routes
+  if (isAuthenticated && publicRoutes.includes(pathname)) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return Response.redirect(url)
+  }
+
+  // if not authenticated and trying to access protected routes, redirect to login
+  if (!isAuthenticated && !publicRoutes.includes(pathname)) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return Response.redirect(url)
+  }
+
+  return res
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/login', '/signup', '/auth/callback']
-} 
+  matcher: [
+    '/',
+    '/login',
+    '/signup',
+    '/dashboard/:path*',
+    '/auth/callback',
+  ],
+}

@@ -13,7 +13,7 @@ export default function Page() {
           <div className="flex flex-col justify-center gap-6 rounded-lg p-6 md:w-2/3 lg:px-12 xl:px-20">
             <p className={`${spaceGrotesk.className} text-xl text-white md:text-3xl md:leading-normal`}>
               <strong>Welcome to Market Lens.</strong> A modern stock market simulator built specifically
-              for investors, students, and enthusiasts.
+              for students, investors, and enthusiasts.
             </p>
             <Link
               href="/signup"
@@ -28,7 +28,7 @@ export default function Page() {
               width={350}
               height={266}
               priority
-              className="hidden md:block w-full h-auto"
+              className="hidden md:block w-auto h-auto"
               alt="Bull"
             />
           </div>

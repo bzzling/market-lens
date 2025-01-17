@@ -1,6 +1,6 @@
 'use client';
 
-import SignupForm from '@/components/signup-form';
+import SignupForm from '@/app/components/signup-form';
 import { Suspense, useEffect } from 'react';
 
 export default function SignupPage() {

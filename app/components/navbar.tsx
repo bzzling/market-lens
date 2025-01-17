@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { inter } from '@/app/fonts';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/app/hooks/useAuth';
+import { createClient} from '@/app/utils/supabase/client';
 import {
   HomeIcon,
   DocumentDuplicateIcon,
@@ -26,10 +26,10 @@ export default function Navbar() {
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { signOut } = useAuth();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session);
       
       if (!session && pathname.startsWith('/dashboard')) {
@@ -63,18 +63,18 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-              <Image
-                src="/logo-inverse.png"
-                alt="Market Lens Logo"
-                width={500}
-                height={500}
-                className="h-8 w-8"
-              />
-              <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
+            <Image
+              src="/logo-inverse.png"
+              alt="Market Lens Logo"
+              width={500}
+              height={500}
+              className="h-8 w-8"
+            />
+            <span className={`${inter.className} ml-4 text-white font-medium`}>Market Lens</span>
           </div>
 
           {isLoggedIn && (
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
               {dashboardLinks.map((link) => {
                 const LinkIcon = link.icon;
                 const isActive = pathname === link.href;
@@ -84,15 +84,16 @@ export default function Navbar() {
                     key={link.name}
                     href={link.href}
                     className={clsx(
-                      'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                      'flex items-center gap-2 px-2 md:px-3 py-2 rounded-md text-sm font-medium transition-colors',
                       {
                         'bg-white text-black hover:bg-gray-100': isActive,
                         'text-gray-400 hover:bg-zinc-800 hover:text-white': !isActive,
                       },
                     )}
+                    title={link.name}
                   >
                     <LinkIcon className="w-5 h-5" />
-                    <span>{link.name}</span>
+                    <span className="hidden md:inline">{link.name}</span>
                   </Link>
                 );
               })}
