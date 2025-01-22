@@ -158,6 +158,17 @@ export default function StockSearch({ onSelect, currentPrice, onShowMax, quantit
   const commission = 19.99;
   const estimatedTotal = currentPrice ? (Number(quantity) * currentPrice) + commission : 0;
 
+  // Add these effects to close preview when parameters change
+  useEffect(() => {
+    setShowPreview(false);
+  }, [quantity, action]);
+
+  useEffect(() => {
+    if (value) {
+      setShowPreview(false);
+    }
+  }, [value]);
+
   return (
     <div className="space-y-4">
       <div className="space-y-6">
@@ -262,7 +273,7 @@ export default function StockSearch({ onSelect, currentPrice, onShowMax, quantit
               onClick={() => setShowPreview(false)}
               className="flex-1"
             >
-              Modify
+              Cancel
             </Button>
             <Button 
               onClick={handleSubmitOrder}
