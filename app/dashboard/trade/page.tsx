@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/auth-forms/card';
 import StockSearch from '@/components/ui/trade/stock-search';
 import { getStockPrice, isMarketOpen } from '../../lib/stock-utils';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { processPendingTrades } from '../../lib/trade-execution';
 
 export default function TradePage() {
   const [ticker, setTicker] = useState('');
@@ -24,6 +25,16 @@ export default function TradePage() {
     checkMarketHours();
     const interval = setInterval(checkMarketHours, 60000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const processTradesInterval = setInterval(() => {
+      if (isMarketOpen()) {
+        processPendingTrades();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(processTradesInterval);
   }, []);
 
   const validateShares = async (shares: number) => {

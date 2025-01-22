@@ -13,7 +13,6 @@ type EnhancedHolding = PortfolioHolding & {
   totalValue: number;
   totalGainLoss: number;
   totalGainLossPercent: number;
-  name?: string;
 };
 
 export default function PortfolioHoldings() {
@@ -103,7 +102,6 @@ export default function PortfolioHoldings() {
             <thead>
               <tr className="border-b border-zinc-800">
                 <th className="h-12 px-4 text-left align-middle font-medium">Symbol</th>
-                <th className="h-12 px-4 text-left align-middle font-medium hidden md:table-cell">Name</th>
                 <th className="h-12 px-4 text-right align-middle font-medium">Current Price</th>
                 <th className="h-12 px-4 text-right align-middle font-medium hidden sm:table-cell">Today's Change</th>
                 <th className="h-12 px-4 text-right align-middle font-medium hidden lg:table-cell">Avg Price</th>
@@ -115,7 +113,7 @@ export default function PortfolioHoldings() {
             <tbody>
               {holdings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-4 text-gray-400">
+                  <td colSpan={7} className="text-center py-4 text-gray-400">
                     You have no stock holdings yet
                   </td>
                 </tr>
@@ -123,7 +121,6 @@ export default function PortfolioHoldings() {
                 holdings.map((holding) => (
                   <tr key={holding.ticker} className="border-b border-zinc-800">
                     <td className="p-4">{holding.ticker}</td>
-                    <td className="p-4 hidden md:table-cell">{holding.name || '-'}</td>
                     <td className="p-4 text-right">${holding.currentPrice.toFixed(2)}</td>
                     <td className={`p-4 text-right hidden sm:table-cell ${holding.todaysChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                       {holding.todaysChange >= 0 ? '+' : ''}{holding.todaysChange.toFixed(2)}%

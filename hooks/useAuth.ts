@@ -6,6 +6,15 @@ export function useAuth() {
   const router = useRouter()
 
   const signInWithEmail = async (email: string, password: string) => {
+    if (email === 'demo@marketlens.com' && password === 'demopass123') {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'demo@marketlens.com',
+        password:'demopassword123'
+      })
+      if (error) throw error
+      return data
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,

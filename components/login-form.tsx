@@ -22,8 +22,15 @@ export default function LoginForm({
 
   useEffect(() => {
     const message = searchParams.get('message')
+    const demo = searchParams.get('demo')
+    
     if (message) {
       setMessage(message)
+    }
+    
+    if (demo === 'true') {
+      setEmail('demo@marketlens.com')
+      setPassword('demopass123')
     }
   }, [searchParams])
 
@@ -137,7 +144,7 @@ export default function LoginForm({
                   Or continue with
                 </span>
               </div>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <Button 
                   type="button"
                   variant="outline" 
@@ -152,6 +159,21 @@ export default function LoginForm({
                   </svg>
                   <span className="sr-only">Login with GitHub</span>
                   GitHub
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    router.push('/login?demo=true');
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                  Demo
                 </Button>
               </div>
               <div className="text-center text-sm">
