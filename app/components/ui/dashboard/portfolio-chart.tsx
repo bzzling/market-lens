@@ -1,3 +1,5 @@
+// TODO: revert to full timestamp matching executed_at from transactions table and insert into portfolio_value_history using this time stamp to ensure daily movements
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,7 +28,6 @@ const formatDateStr = (date: Date): string => {
   return date.toISOString().split('T')[0];
 };
 
-// Update getMarketDays to use a Set of holidays for efficient lookup
 const getMarketDays = (start: Date, end: Date, holidays: Set<string>): string[] => {
   const days: string[] = [];
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -42,7 +43,7 @@ export default function PortfolioChart() {
   const [selectedRange, setSelectedRange] = useState('1month');
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Add error state
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPortfolioHistory = async () => {
@@ -64,9 +65,6 @@ export default function PortfolioChart() {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - selectedTimeRange.days);
 
-        // Modified holiday fetch to use simpler query
-        // ...
-        // Simplified holiday fetch to match table structure
         const { data: holidayData, error: holidayError } = await supabase
           .from('market_holidays')
           .select('date')
@@ -79,10 +77,8 @@ export default function PortfolioChart() {
           return;
         }
     
-        // Create Set from holiday dates
         const holidays = new Set((holidayData || []).map(h => h.date));
-    
-        // Fetch portfolio history with error handling
+
         const { data: historyData, error: historyError } = await supabase
           .from('portfolio_value_history')
           .select('total_value, timestamp')
@@ -97,12 +93,11 @@ export default function PortfolioChart() {
           return;
         }
 
-        // Check if we have enough data points (excluding holidays)
         const expectedDays = getMarketDays(startDate, new Date(), holidays).length;
         const hasEnoughData = historyData && historyData.length >= expectedDays * 0.9;
 
         if (!error && hasEnoughData) {
-          // Filter out any holiday dates from the history data
+          // filter out any holiday dates from the history data
           const filteredData = historyData.filter(record => 
             !holidays.has(formatDateStr(new Date(record.timestamp)))
           );
@@ -115,7 +110,7 @@ export default function PortfolioChart() {
           return;
         }
 
-        // If no cached data or insufficient data, calculate historical values
+        // if no cached data or insufficient data, calculate historical values
         const { data: transactions, error: transactionError } = await supabase
           .from('transactions')
           .select('*')
@@ -135,7 +130,6 @@ export default function PortfolioChart() {
             value: 100000
           };
           
-          // Update cache logic to use upsert instead of insert
           await supabase
             .from('portfolio_value_history')
             .upsert({
@@ -154,10 +148,10 @@ export default function PortfolioChart() {
           return;
         }
 
-        // Get all market days in range
+        // get all market days in range
         const daysToCalculate = getMarketDays(startDate, new Date(), holidays);
 
-        // Calculate daily portfolio values and cache them
+        // calculate daily portfolio values and cache them
         const calculatedData = await Promise.all(daysToCalculate.map(async dateStr => {
           const transactionsToDate = transactions.filter(t => 
             formatDateStr(new Date(t.executed_at)) <= dateStr
@@ -166,21 +160,21 @@ export default function PortfolioChart() {
           let holdings = new Map<string, number>();
           let cashBalance = 100000;
 
-          // Calculate holdings and cash for this date
+          // calculate holdings and cash for this date
           transactionsToDate.forEach(t => {
-            const { ticker, quantity, price, type } = t;
+            const { ticker, quantity, type, total_amount } = t;
             const currentQty = holdings.get(ticker) || 0;
             
             if (type === 'buy') {
-              cashBalance -= quantity * price;
+              cashBalance -= total_amount;
               holdings.set(ticker, currentQty + quantity);
             } else {
-              cashBalance += quantity * price;
+              cashBalance += total_amount;
               holdings.set(ticker, Math.max(0, currentQty - quantity));
             }
           });
 
-          // Get historical prices for this date
+          // get historical prices for this date
           const heldTickers = Array.from(holdings.entries())
             .filter(([_, qty]) => qty > 0)
             .map(([ticker]) => ticker);
@@ -199,9 +193,8 @@ export default function PortfolioChart() {
             }
           }
 
-          // Only store and return data points where we have all prices
+          // only store and return data points where we have all prices
           if (allPricesAvailable) {
-            // Update cache logic to use upsert with proper conflict handling
             await supabase
               .from('portfolio_value_history')
               .upsert({
@@ -222,7 +215,7 @@ export default function PortfolioChart() {
           return null;
         }));
 
-        // Filter out null values (days without complete data)
+        // filter out null values (days without complete data)
         setChartData(calculatedData.filter(Boolean));
       } catch (err) {
         console.error('Portfolio chart error:', err);
@@ -235,7 +228,6 @@ export default function PortfolioChart() {
     fetchPortfolioHistory();
   }, [selectedRange]);
 
-  // Add error display in the UI
   if (error) {
     return (
       <Card className="h-[400px] lg:h-full p-6">

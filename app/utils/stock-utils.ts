@@ -12,25 +12,23 @@ interface FMPResponse {
 }
 
 const API_BASE_URL = 'https://api.brandonling.me/api';
-const FMP_API_KEY = 't9yBJ129rq4D54B65RGeIAWZZzXm4hXw';
-// alt 1shTzsxcncB4pkTuPCRplMN5CR35WxIN
+const FMP_API_KEY = '1shTzsxcncB4pkTuPCRplMN5CR35WxIN';
+// alt t9yBJ129rq4D54B65RGeIAWZZzXm4hXw  1shTzsxcncB4pkTuPCRplMN5CR35WxIN
+// api keys above are temporary (and free) before I move it to the EC2 server
 
-// Update cachePrice function signature and implementation
-// Update cache function to handle conflicts correctly
 async function cachePrice(supabase: any, ticker: string, price: number, timestamp: string, source: string, isTransaction: boolean = false) {
   const now = new Date().toISOString();
-  // Format the timestamp to only include the date portion
   const dateOnly = new Date(timestamp).toISOString().split('T')[0];
   
   try {
-    // First, try to insert into cache
+    // first, try to insert into cache
     const { error: cacheError } = await supabase
       .from('stock_price_cache')
       .upsert(
         { 
           ticker, 
           price,
-          timestamp: now,  // Keep full timestamp for cache
+          timestamp: now,
           source
         },
         { 
@@ -43,14 +41,14 @@ async function cachePrice(supabase: any, ticker: string, price: number, timestam
       console.error('Error updating price cache:', cacheError);
     }
     
-    // Then, try to insert into history with date only
+    // try to insert into history with date only
     const { error: historyError } = await supabase
       .from('stock_price_history')
       .insert(
         { 
           ticker, 
           price,
-          timestamp: dateOnly,  // Use date only for historical records
+          timestamp: dateOnly,
           source,
           is_transaction: isTransaction,
           created_at: now
@@ -60,9 +58,9 @@ async function cachePrice(supabase: any, ticker: string, price: number, timestam
       .single();
 
     if (historyError) {
-      // If error is about duplicate entry, we can ignore it
-      if (historyError.code === '23505') { // Postgres unique violation code
-        return; // Silently succeed as the record already exists
+      // if error is about duplicate entry, we can ignore it
+      if (historyError.code === '23505') {
+        return; // record already exists
       }
       console.error('Error updating price history:', historyError);
       throw historyError;
@@ -83,7 +81,6 @@ async function getRealTimePrice(ticker: string) {
   return Number(response.data.price);
 }
 
-// Update getStockPrice function
 export async function getStockPrice(ticker: string, forTransaction: boolean = false) {
   const supabase = createClient();
   const CACHE_DURATION = 60 * 15 // 15 min
@@ -103,7 +100,6 @@ export async function getStockPrice(ticker: string, forTransaction: boolean = fa
       .single();
 
     if (cacheError) {
-      // If cache fetch fails, don't error out, just continue to fetch fresh price
       console.log('Cache miss:', cacheError.message);
     } else if (cachedPrice) {
       const cacheAge = (Date.now() - new Date(cachedPrice.timestamp).getTime()) / 1000;
@@ -112,7 +108,6 @@ export async function getStockPrice(ticker: string, forTransaction: boolean = fa
       }
     }
 
-    // If we get here, either cache failed or is expired
     const now = new Date().toISOString();
     const price = await getQuickPrice(ticker);
     await cachePrice(supabase, ticker, price, now, 'twelve');
@@ -141,7 +136,7 @@ async function isMarketHoliday(supabase: any, date: Date): Promise<boolean> {
     return false;
   }
   
-  return data && data.length > 0;  // Changed from single() to checking array length
+  return data && data.length > 0;
 }
 
 const getMarketDays = async (supabase: any, start: Date, end: Date): Promise<string[]> => {
@@ -159,7 +154,7 @@ export async function getHistoricalPrices(ticker: string, startDate: Date, endDa
   const formattedStartDate = startDate.toISOString().split('T')[0];
   const formattedEndDate = endDate.toISOString().split('T')[0];
 
-  // Check cache first
+  // check cache first
   const { data: cachedPrices } = await supabase
     .from('stock_price_history')
     .select('*')
@@ -168,10 +163,10 @@ export async function getHistoricalPrices(ticker: string, startDate: Date, endDa
     .lte('timestamp', formattedEndDate)
     .order('timestamp', { ascending: true });
 
-  // Calculate expected trading days (excluding holidays and weekends)
+  // calculate expected trading days (excluding holidays and weekends)
   const expectedDays = (await getMarketDays(supabase, startDate, endDate)).length;
   
-  // If we have enough cached data, use it
+  // if we have enough cached data, use it
   if (cachedPrices && cachedPrices.length >= expectedDays * 0.9) {
     return cachedPrices.map(p => ({
       date: new Date(p.timestamp).toLocaleDateString(),
@@ -179,7 +174,7 @@ export async function getHistoricalPrices(ticker: string, startDate: Date, endDa
     }));
   }
 
-  // If cache miss, fetch from API
+  // if cache miss, fetch from API
   const response = await axios.get<FMPResponse>(
     `https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?from=${formattedStartDate}&to=${formattedEndDate}&apikey=${FMP_API_KEY}`
   );
@@ -188,16 +183,14 @@ export async function getHistoricalPrices(ticker: string, startDate: Date, endDa
     return [];
   }
 
-  // Update market holidays based on missing weekdays in API response
+  // update market holidays based on missing weekdays in API response
   const receivedDates = new Set(response.data.historical.map(p => p.date));
   const now = new Date().toISOString();
   
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     if (!isWeekend(d)) {
       const dateStr = d.toISOString().split('T')[0];
-      // In getHistoricalPrices function, update the holiday insertion:
       if (!receivedDates.has(dateStr)) {
-        // Insert missing dates as holidays
         const { error } = await supabase
           .from('market_holidays')
           .insert({
@@ -205,16 +198,16 @@ export async function getHistoricalPrices(ticker: string, startDate: Date, endDa
             created_at: now,
             updated_at: now
           })
-          .select();  // Added select() to ensure proper response
+          .select();
       
-        if (error && error.code !== '23505') {  // Ignore unique violation errors
+        if (error && error.code !== '23505') {
           console.error('Error inserting market holiday:', error);
         }
       }
     }
   }
 
-  // Cache the new price data
+  // cache the new price data
   const priceRecords = response.data.historical.map(p => ({
     ticker,
     price: p.close,
@@ -264,7 +257,7 @@ export async function batchHistoricalPrices(
   return results;
 }
 
-// Update the existing isWeekend function to be exported
+// to check if a date is a weekend
 export function isWeekend(date: Date): boolean {
   const day = date.getDay();
   return day === 0 || day === 6;

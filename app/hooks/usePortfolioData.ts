@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
-import { getUserProfile } from '@/app/utils/supabase/database';
-import { recalculateUserCashBalance } from '@/app/utils/supabase/database';
+import { isWeekend, isHoliday } from '@/app/utils/stock-utils';
 
 export function usePortfolioData() {
   const [loading, setLoading] = useState(true);
@@ -24,7 +23,7 @@ export function usePortfolioData() {
           return;
         }
 
-        // Get the most recent portfolio value history entry
+        // get the most recent portfolio value history entry
         const { data: latestHistory, error: historyError } = await supabase
           .from('portfolio_value_history')
           .select('*')
@@ -38,14 +37,20 @@ export function usePortfolioData() {
           return;
         }
 
-        // Get yesterday's value for daily change calculation
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const { data: yesterdayHistory } = await supabase
+        // get yesterday for comparison
+        let lastBusinessDay = new Date();
+        lastBusinessDay.setDate(lastBusinessDay.getDate() - 1);
+        // ensure yesterdau wasn't a weekend or a holiday, else iterate backwards
+        while (isWeekend(lastBusinessDay) || await isHoliday(lastBusinessDay)) {
+          lastBusinessDay.setDate(lastBusinessDay.getDate() - 1);
+        }
+
+        // get last business day's value for daily change calculation
+        const { data: previousHistory } = await supabase
           .from('portfolio_value_history')
           .select('total_value')
           .eq('user_id', user.id)
-          .eq('timestamp', yesterday.toISOString().split('T')[0])
+          .eq('timestamp', lastBusinessDay.toISOString().split('T')[0])
           .single();
 
         if (latestHistory?.[0]) {
@@ -54,25 +59,14 @@ export function usePortfolioData() {
           setCashBalance(latest.cash_balance);
           setTotalValue(latest.total_value);
 
-          if (yesterdayHistory) {
-            const change = latest.total_value - yesterdayHistory.total_value;
+          if (previousHistory) {
+            const change = latest.total_value - previousHistory.total_value;
             setDailyChange(change);
-            setDailyChangePercent((change / yesterdayHistory.total_value) * 100);
+            setDailyChangePercent((change / previousHistory.total_value) * 100);
           }
-        } else {
-          // If no history exists, fall back to profile data
-          const profile = await getUserProfile(user.id);
-          if (!profile) {
-            setError('Profile not found');
-            return;
-          }
-          const cashBalance = await recalculateUserCashBalance(user.id);
-          setCashBalance(cashBalance || profile.cash_balance);
-          setTotalValue(cashBalance || profile.cash_balance);
-          setPortfolioValue(0);
         }
 
-        // Calculate annualized return
+        // calculate annualized return
         const { data: firstTransaction } = await supabase
           .from('transactions')
           .select('executed_at')
@@ -103,7 +97,7 @@ export function usePortfolioData() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 5 * 60 * 1000); // Refresh every 5 minutes
+    const interval = setInterval(fetchData, 5 * 60 * 1000); // refresh every 5 minutes
     return () => clearInterval(interval);
   }, []);
 

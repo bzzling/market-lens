@@ -11,7 +11,6 @@ export async function processPendingTrades() {
   }
 
   try {
-    // Get all pending trades
     const { data: pendingTrades, error } = await supabase
       .from('pending_trades')
       .select('*')
@@ -22,46 +21,44 @@ export async function processPendingTrades() {
     if (!pendingTrades || pendingTrades.length === 0) return;
     
     const { data: users, error: userError } = await supabase
-     .from('profiles')
-     .select('id, cash_balance')
-     .in('id', pendingTrades.map(trade => trade.user_id));
+      .from('user_profiles')
+      .select('user_id, cash_balance')
+      .in('user_id', pendingTrades.map(trade => trade.user_id));
 
     if (userError) throw userError;
     if (!users) return;
 
     for (const trade of pendingTrades) {
       try {
-        // Get current market price
         const currentPrice = await getStockPrice(trade.ticker);
-        
-        // Check if the price conditions are met and user has sufficient funds
-        const userBalance = users.find(u => u.id === trade.user_id)?.cash_balance || 0;
+        const userBalance = users.find(u => u.user_id === trade.user_id)?.cash_balance || 0;
         const totalCost = currentPrice * trade.quantity + trade.commission;
 
         let priceConditionMet = false;
         if (trade.transaction_type === 'buy') {
-          // For buy orders: current price should be <= limit price AND user has enough funds
-          priceConditionMet = totalCost <= userBalance;
+          priceConditionMet = currentPrice <= trade.price && totalCost <= userBalance;
         } else {
-          // For sell orders: current price should be >= limit price
           const { data: holding } = await supabase
             .from('portfolio_holdings')
             .select('quantity')
             .eq('user_id', trade.user_id)
             .eq('ticker', trade.ticker)
             .single();
-            
-          // Ensure holding exists and has sufficient quantity before checking price condition
           const hasEnoughShares = holding ? holding.quantity >= trade.quantity : false;
           priceConditionMet = currentPrice >= trade.price && hasEnoughShares;
         }
 
         if (!priceConditionMet) {
-          console.log(`Conditions not met for trade ${trade.id}. Price: ${currentPrice}, Limit: ${trade.price}`);
+          console.log(`Conditions not met for trade ${trade.id}:`, {
+            type: trade.transaction_type,
+            currentPrice,
+            limitPrice: trade.price,
+            userBalance,
+            totalCost,
+            priceConditionMet
+          });
           continue;
         }
-
-        // Execute the transaction at the current price
         await executeTransaction({
           user_id: trade.user_id,
           ticker: trade.ticker,
@@ -71,7 +68,6 @@ export async function processPendingTrades() {
           total_amount: totalCost
         });
 
-        // Update trade status to completed
         await supabase
           .from('pending_trades')
           .update({ 

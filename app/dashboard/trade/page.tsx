@@ -28,14 +28,12 @@ export default function TradePage() {
   }, []);
 
   useEffect(() => {
-    // Process trades every minute when market is open
     const processTradesInterval = setInterval(() => {
       if (isMarketOpen()) {
         processPendingTrades();
       }
-    }, 60000); // Check every minute
+    }, 60000);
 
-    // Initial processing when component mounts
     if (isMarketOpen()) {
       processPendingTrades();
     }
@@ -130,12 +128,10 @@ export default function TradePage() {
   };
 
   const handleShowMax = async () => {
-    // Validate ticker
     if (!ticker || ticker.trim() === '') {
       return { error: 'Please enter a valid ticker symbol first', maxQuantity: 0 };
     }
 
-    // Validate price
     if (!price || isNaN(price) || price <= 0) {
       return { error: 'Unable to fetch current price or price is invalid', maxQuantity: 0 };
     }
@@ -149,7 +145,6 @@ export default function TradePage() {
 
     try {
       if (orderType === 'sell') {
-        // For sell orders, check current holdings
         const { data: holding, error: holdingError } = await supabase
           .from('portfolio_holdings')
           .select('quantity')
@@ -161,7 +156,6 @@ export default function TradePage() {
           return { error: 'No shares available to sell', maxQuantity: 0 };
         }
 
-        // Check pending sell orders
         const { data: pendingSells, error: pendingError } = await supabase
           .from('pending_trades')
           .select('quantity')
@@ -184,7 +178,6 @@ export default function TradePage() {
         return { error: '', maxQuantity: availableShares };
 
       } else {
-        // For buy orders
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
           .select('cash_balance')
@@ -195,7 +188,6 @@ export default function TradePage() {
           return { error: 'Unable to fetch account balance', maxQuantity: 0 };
         }
 
-        // Get pending buy orders to calculate reserved funds
         const { data: pendingBuys, error: pendingError } = await supabase
           .from('pending_trades')
           .select('quantity, price, commission')
@@ -256,7 +248,6 @@ export default function TradePage() {
         status: 'pending'
       });
       setSuccess('Order submitted successfully!');
-      // Reset form
       setTicker('');
       setPrice(null);
       setQuantity('');

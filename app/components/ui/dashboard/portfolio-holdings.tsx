@@ -6,6 +6,7 @@ import { getStockPrice } from '@/app/utils/stock-utils';
 import { PortfolioHolding } from '@/app/utils/definitions';
 import { getUserPortfolio } from '@/app/utils/supabase/database';
 import PendingTrades from './pending-trades';
+import { getHistoricalPrices, isWeekend, isHoliday } from '@/app/utils/stock-utils';
 
 type EnhancedHolding = PortfolioHolding & {
   currentPrice: number;
@@ -31,13 +32,32 @@ export default function PortfolioHoldings() {
           return;
         }
 
-        // Get base holdings data
+        // get base holdings data
         const portfolioHoldings = await getUserPortfolio(user.id);
         
-        // Enhance holdings with current prices and calculations
+        // enhance holdings with current prices and calculations
         const enhancedHoldings = await Promise.all(
           portfolioHoldings.map(async (holding: PortfolioHolding) => {
             const currentPrice = await getStockPrice(holding.ticker);
+            
+            // get last business day's date
+            let lastBusinessDay = new Date();
+            lastBusinessDay.setDate(lastBusinessDay.getDate() - 1);
+            // now ensure that yesterday was a business day, else iterate through the loop
+            while (isWeekend(lastBusinessDay) || await isHoliday(lastBusinessDay)) {
+              lastBusinessDay.setDate(lastBusinessDay.getDate() - 1);
+            }
+            
+            // get last business day's price
+            const previousPrices = await getHistoricalPrices(
+              holding.ticker,
+              lastBusinessDay,
+              lastBusinessDay
+            );
+            
+            const previousPrice = previousPrices.length > 0 ? previousPrices[0].price : currentPrice;
+            const todaysChange = ((currentPrice - previousPrice) / previousPrice) * 100;
+            
             const totalValue = currentPrice * holding.quantity;
             const totalGainLoss = totalValue - (holding.average_price * holding.quantity);
             const totalGainLossPercent = ((currentPrice - holding.average_price) / holding.average_price) * 100;
@@ -45,7 +65,7 @@ export default function PortfolioHoldings() {
             return {
               ...holding,
               currentPrice,
-              todaysChange: 0, // TODO: need to implement this with historical data
+              todaysChange,
               totalValue,
               totalGainLoss,
               totalGainLossPercent

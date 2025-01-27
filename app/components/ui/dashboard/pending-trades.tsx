@@ -3,6 +3,14 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { Button } from '@/app/components/ui/auth-forms/button';
+import { getStockPrice } from '@/app/utils/stock-utils';
+import { Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/components/ui/tooltip";
 
 type PendingTrade = {
   id: string;
@@ -13,6 +21,7 @@ type PendingTrade = {
   commission: number;
   status: string;
   created_at: string;
+  currentPrice?: number;
 };
 
 export default function PendingTrades() {
@@ -33,7 +42,13 @@ export default function PendingTrades() {
       .order('created_at', { ascending: false });
 
     if (trades) {
-      setTrades(trades);
+      const tradesWithPrices = await Promise.all(
+        trades.map(async (trade) => {
+          const currentPrice = await getStockPrice(trade.ticker);
+          return { ...trade, currentPrice };
+        })
+      );
+      setTrades(tradesWithPrices);
     }
   };
 
@@ -65,8 +80,18 @@ export default function PendingTrades() {
 
   return (
     <div className="rounded-lg border border-zinc-800 mt-6">
-      <div className="p-4 border-b border-zinc-800">
+      <div className="p-4 border-b border-zinc-800 flex items-center gap-2">
         <h2 className="text-lg font-semibold">Pending Trades</h2>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Info className="h-4 w-4 text-white" />
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-[300px]">
+              <p>Orders execute when market price is ≤/≥ limit price for buy/sell respectively</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <div className="relative w-full overflow-auto">
         <table className="w-full caption-bottom text-sm">
@@ -75,7 +100,8 @@ export default function PendingTrades() {
               <th className="h-12 px-4 text-left align-middle font-medium">Symbol</th>
               <th className="h-12 px-4 text-left align-middle font-medium">Type</th>
               <th className="h-12 px-4 text-right align-middle font-medium">Quantity</th>
-              <th className="h-12 px-4 text-right align-middle font-medium">Price</th>
+              <th className="h-12 px-4 text-right align-middle font-medium">Limit Price</th>
+              <th className="h-12 px-4 text-right align-middle font-medium">Current Price</th>
               <th className="h-12 px-4 text-right align-middle font-medium">Total</th>
               <th className="h-12 px-4 text-right align-middle font-medium">Actions</th>
             </tr>
@@ -91,6 +117,9 @@ export default function PendingTrades() {
                 </td>
                 <td className="p-4 text-right">{trade.quantity}</td>
                 <td className="p-4 text-right">${trade.price.toFixed(2)}</td>
+                <td className="p-4 text-right">
+                  ${trade.currentPrice ? trade.currentPrice.toFixed(2) : '-'}
+                </td>
                 <td className="p-4 text-right">
                   ${((trade.quantity * trade.price) + trade.commission).toFixed(2)}
                 </td>
@@ -112,4 +141,4 @@ export default function PendingTrades() {
       </div>
     </div>
   );
-} 
+}
