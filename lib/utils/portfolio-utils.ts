@@ -15,7 +15,7 @@ export async function updatePortfolioValueHistory(userId: string) {
 
   // get current cash balance
   const { data: profile } = await supabase
-    .from("user_profiles")
+    .from("portfolios")
     .select("cash_balance")
     .eq("user_id", userId)
     .single();

@@ -10,11 +10,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user profile
+    // Get user from users table first
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (userError) {
+      return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
+    }
+
+    // Get user portfolio
     const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
+      .from('portfolios')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userData.id)
       .single();
 
     if (profileError) {
@@ -25,7 +36,7 @@ export async function GET() {
     const { data: holdings, error: holdingsError } = await supabase
       .from('portfolio_holdings')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', userData.id);
 
     if (holdingsError) {
       return NextResponse.json({ error: 'Failed to fetch holdings' }, { status: 500 });

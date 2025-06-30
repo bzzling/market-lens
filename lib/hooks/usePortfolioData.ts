@@ -38,9 +38,9 @@ export function usePortfolioData() {
           return;
         }
 
-        // Get user profile for cash balance
+        // Get user portfolio for cash balance
         const { data: profile, error: profileError } = await supabase
-          .from("user_profiles")
+          .from("portfolios")
           .select("*")
           .eq("user_id", userData.id)
           .single();

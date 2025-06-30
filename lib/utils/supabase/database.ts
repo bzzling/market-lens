@@ -14,9 +14,20 @@ export async function executeTransaction(
   } = await supabase.auth.getSession();
   if (!session) throw new Error("Not authenticated");
 
+  // Get user ID from users table
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('auth_user_id', session.user.id)
+    .single();
+
+  if (userError || !userData) {
+    throw new Error("User not found");
+  }
+
   try {
     const { data, error } = await supabase.rpc('execute_trade', {
-      p_user_id: session.user.id,
+      p_user_id: userData.id,
       p_ticker: ticker.toUpperCase(),
       p_type: type,
       p_quantity: quantity,
@@ -60,7 +71,7 @@ export async function getUserProfile(
   const supabase = createClient();
 
   const { data: profile } = await supabase
-    .from("user_profiles")
+    .from("portfolios")
     .select("*")
     .eq("user_id", userId)
     .single();
@@ -91,9 +102,9 @@ export async function recalculateUserCashBalance(userId: string) {
     }
   });
 
-  // update user's profile with calculated balance
+  // update user's portfolio with calculated balance
   await supabase
-    .from("user_profiles")
+    .from("portfolios")
     .update({ cash_balance: cashBalance })
     .eq("user_id", userId);
 

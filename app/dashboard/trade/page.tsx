@@ -50,12 +50,21 @@ export default function TradePage() {
     } = await supabase.auth.getUser();
     if (!user) return false;
 
+    // Get user ID from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (userError || !userData) return false;
+
     try {
       if (orderType === "sell") {
         const { data: holding } = await supabase
           .from("portfolio_holdings")
           .select("quantity")
-          .eq("user_id", user.id)
+          .eq("user_id", userData.id)
           .eq("ticker", ticker)
           .single();
 
@@ -64,7 +73,7 @@ export default function TradePage() {
         const { data: pendingSells } = await supabase
           .from("pending_trades")
           .select("quantity")
-          .eq("user_id", user.id)
+          .eq("user_id", userData.id)
           .eq("ticker", ticker)
           .eq("transaction_type", "sell")
           .eq("status", "pending");
@@ -74,9 +83,9 @@ export default function TradePage() {
         return shares <= holding.quantity - totalPendingSells;
       } else {
         const { data: profile } = await supabase
-          .from("user_profiles")
+          .from("portfolios")
           .select("cash_balance")
-          .eq("user_id", user.id)
+          .eq("user_id", userData.id)
           .single();
 
         if (!profile) return false;
@@ -84,7 +93,7 @@ export default function TradePage() {
         const { data: pendingBuys } = await supabase
           .from("pending_trades")
           .select("quantity, price, commission")
-          .eq("user_id", user.id)
+          .eq("user_id", userData.id)
           .eq("transaction_type", "buy")
           .eq("status", "pending");
 
@@ -164,12 +173,23 @@ export default function TradePage() {
       return { error: "Please sign in to continue", maxQuantity: 0 };
     }
 
+    // Get user ID from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (userError || !userData) {
+      return { error: "User not found", maxQuantity: 0 };
+    }
+
     try {
       if (orderType === "sell") {
         const { data: holding, error: holdingError } = await supabase
           .from("portfolio_holdings")
           .select("quantity")
-          .eq("user_id", user.id)
+          .eq("user_id", userData.id)
           .eq("ticker", ticker)
           .single();
 
@@ -180,7 +200,7 @@ export default function TradePage() {
         const { data: pendingSells, error: pendingError } = await supabase
           .from("pending_trades")
           .select("quantity")
-          .eq("user_id", user.id)
+          .eq("user_id", userData.id)
           .eq("ticker", ticker)
           .eq("transaction_type", "sell")
           .eq("status", "pending");
@@ -209,9 +229,9 @@ export default function TradePage() {
         return { error: "", maxQuantity: availableShares };
       } else {
         const { data: profile, error: profileError } = await supabase
-          .from("user_profiles")
+          .from("portfolios")
           .select("cash_balance")
-          .eq("user_id", user.id)
+          .eq("user_id", userData.id)
           .single();
 
         if (profileError || !profile || !profile.cash_balance) {
@@ -221,7 +241,7 @@ export default function TradePage() {
         const { data: pendingBuys, error: pendingError } = await supabase
           .from("pending_trades")
           .select("quantity, price, commission")
-          .eq("user_id", user.id)
+          .eq("user_id", userData.id)
           .eq("transaction_type", "buy")
           .eq("status", "pending");
 

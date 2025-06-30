@@ -21,7 +21,7 @@ export async function processPendingTrades() {
     if (!pendingTrades || pendingTrades.length === 0) return;
 
     const { data: users, error: userError } = await supabase
-      .from("user_profiles")
+      .from("portfolios")
       .select("user_id, cash_balance")
       .in(
         "user_id",
