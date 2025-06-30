@@ -1,18 +1,37 @@
-import { createClient } from '@/app/utils/supabase/server'
-import DashboardCards from '@/app/components/ui/dashboard/cards';
-import Greeting from '@/app/components/ui/dashboard/greeting';
-import PortfolioChart from '@/app/components/ui/dashboard/portfolio-chart';
-import PortfolioHoldings from '@/app/components/ui/dashboard/portfolio-holdings';
+import { createClient } from "@/lib/utils/supabase/server";
+import DashboardCards from "@/components/ui/dashboard/cards";
+import Greeting from "@/components/ui/dashboard/greeting";
+import PortfolioChart from "@/components/ui/dashboard/portfolio-chart";
+import PortfolioHoldings from "@/components/ui/dashboard/portfolio-holdings";
 
 async function getUser() {
   const supabase = await createClient();
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user?.user_metadata?.preferred_name || user?.user_metadata?.name || 'Unknown Infiltrator';
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    
+    if (!user) return "Unknown Infiltrator";
+
+    // Get user info from users table
+    const { data: userData, error } = await supabase
+      .from("users")
+      .select("display_name, first_name, last_name")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching user profile:", error);
+      return "Unknown Infiltrator";
+    }
+
+    const firstName = userData?.first_name || "";
+    const lastName = userData?.last_name || "";
+    return firstName && lastName ? `${firstName} ${lastName}` : firstName || "Unknown Infiltrator";
   } catch (error) {
-    console.error('Error fetching user:', error);
-    return 'Unknown Infiltrator';
+    console.error("Error fetching user:", error);
+    return "Unknown Infiltrator";
   }
 }
 

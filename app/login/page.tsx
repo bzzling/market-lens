@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import LoginForm from '@/app/components/login-form';
-import { Suspense } from 'react';
+import LoginForm from "@/components/login-form";
+import { Suspense } from "react";
 
 export default function LoginPage() {
   return (
@@ -10,5 +10,5 @@ export default function LoginPage() {
         <LoginForm className="w-full max-w-4xl px-4" />
       </Suspense>
     </div>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import NewsArticles from '@/app/components/ui/learn/news-articles';
-import AIChat from '@/app/components/ui/learn/ai-chat';
+import { useState } from "react";
+import NewsArticles from "@/components/ui/learn/news-articles";
+import AIChat from "@/components/ui/learn/ai-chat";
 
 export default function LearnPage() {
-  const [activeTab, setActiveTab] = useState<'ai' | 'news'>('news');
+  const [activeTab, setActiveTab] = useState<"ai" | "news">("news");
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -13,21 +13,21 @@ export default function LearnPage() {
 
       <div className="flex gap-4 mb-6">
         <button
-          onClick={() => setActiveTab('news')}
+          onClick={() => setActiveTab("news")}
           className={`px-4 py-2 rounded-md transition-colors ${
-            activeTab === 'news'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:bg-zinc-800 hover:text-white'
+            activeTab === "news"
+              ? "bg-white text-black"
+              : "text-gray-400 hover:bg-zinc-800 hover:text-white"
           }`}
         >
           Market News
         </button>
         <button
-          onClick={() => setActiveTab('ai')}
+          onClick={() => setActiveTab("ai")}
           className={`px-4 py-2 rounded-md transition-colors ${
-            activeTab === 'ai'
-              ? 'bg-white text-black'
-              : 'text-gray-400 hover:bg-zinc-800 hover:text-white'
+            activeTab === "ai"
+              ? "bg-white text-black"
+              : "text-gray-400 hover:bg-zinc-800 hover:text-white"
           }`}
         >
           AI Assistant
@@ -35,7 +35,7 @@ export default function LearnPage() {
       </div>
 
       <div className="space-y-6">
-        {activeTab === 'news' ? <NewsArticles /> : <AIChat />}
+        {activeTab === "news" ? <NewsArticles /> : <AIChat />}
       </div>
     </div>
   );
