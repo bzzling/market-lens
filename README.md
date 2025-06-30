@@ -1,4 +1,4 @@
-## Market Lens Front-End Overview
+## Market Lens Overview
 
 This document outlines the requirements that I have for the front-end of this project. Find the repository for the back-end [here](https://github.com/bzzling/market-lens-back-end).
 
