@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/utils/supabase/client';
+import { supabase } from '@/lib/supabaseClient';
 import { getStockPrice } from '@/lib/utils/stock-utils';
-import { PortfolioHolding } from '@/lib/utils/definitions';
-import { getUserPortfolio } from '@/lib/utils/supabase/database';
+import { PortfolioHolding } from '@/models/Portfolio';
+import { getPortfolioHoldings } from '@/lib/data/portfolio';
 import PendingTrades from './pending-trades';
 import { getHistoricalPrices, isWeekend, isHoliday } from '@/lib/utils/stock-utils';
 
@@ -24,7 +24,6 @@ export default function PortfolioHoldings() {
   useEffect(() => {
     const fetchHoldings = async () => {
       try {
-        const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
@@ -32,8 +31,20 @@ export default function PortfolioHoldings() {
           return;
         }
 
+        // Get user from users table first
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
+
+        if (userError) {
+          setError('Failed to fetch user data');
+          return;
+        }
+
         // get base holdings data
-        const portfolioHoldings = await getUserPortfolio(user.id);
+        const portfolioHoldings = await getPortfolioHoldings(supabase, userData.id);
         
         // enhance holdings with current prices and calculations
         const enhancedHoldings = await Promise.all(

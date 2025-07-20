@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/auth-forms/card";
-import { createClient } from "@/lib/utils/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { getHistoricalPrices, isWeekend } from "@/lib/utils/stock-utils";
 import {
   LineChart,
@@ -52,7 +52,6 @@ export default function PortfolioChart() {
   useEffect(() => {
     const fetchPortfolioHistory = async () => {
       try {
-        const supabase = createClient();
         const {
           data: { user },
         } = await supabase.auth.getUser();

@@ -1,21 +1,15 @@
 "use client";
 
-import { usePortfolioData } from "@/lib/hooks/usePortfolioData";
+import { useAtom } from "jotai";
+import { portfolioAtom } from "@/atoms/portfolio";
 import { Card } from "@/components/ui/auth-forms/card";
 import { iconMap } from "@/components/ui/dashboard/icon-map";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardCards() {
-  const {
-    loading,
-    error,
-    cashBalance,
-    totalValue,
-    dailyChange,
-    dailyChangePercent,
-  } = usePortfolioData();
+  const [portfolioQuery] = useAtom(portfolioAtom);
 
-  if (loading) {
+  if (portfolioQuery.isPending) {
     return (
       <>
         {[1, 2, 3, 4].map((i) => (
@@ -28,52 +22,55 @@ export default function DashboardCards() {
     );
   }
 
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
+  if (portfolioQuery.isError) {
+    return <div className="text-red-500">Error loading portfolio data</div>;
+  }
+
+  const portfolio = portfolioQuery.data;
+
+  if (!portfolio) {
+    return <div>No portfolio data available</div>;
   }
 
   const data = {
     accountValue: {
       label: "Account Value",
-      value: `$${totalValue.toLocaleString(undefined, {
+      value: `$${portfolio.totalValue.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
       subtext: "Total Portfolio Value",
     },
-    todaysChange:
-      dailyChange !== null
-        ? {
-            label: "Today's Change",
-            value: `${dailyChange >= 0 ? "+" : "-"}$${Math.abs(
-              dailyChange
-            ).toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`,
-            subtext: `${
-              dailyChange >= 0 ? "+" : ""
-            }${dailyChangePercent.toFixed(2)}%`,
-            isPositive: dailyChange >= 0,
-          }
-        : {
-            label: "Today's Change",
-            value: "N/A",
-            subtext: "Not enough data",
-          },
-    annualReturn: {
-      label: "Annual Return",
-      value: "N/A",
-      subtext: "Coming Soon",
-    },
-
-    cash: {
-      label: "Cash",
-      value: `$${cashBalance.toLocaleString(undefined, {
+    todaysChange: {
+      label: "Today's Change",
+      value: `${portfolio.dayChange >= 0 ? "+" : "-"}$${Math.abs(
+        portfolio.dayChange
+      ).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
-      subtext: `${((cashBalance / totalValue) * 100).toFixed(1)}% of Account`,
+      subtext: `${
+        portfolio.dayChange >= 0 ? "+" : ""
+      }${portfolio.dayChangePercent.toFixed(2)}%`,
+      isPositive: portfolio.dayChange >= 0,
+    },
+    totalGains: {
+      label: "Total Gains",
+      value: `${portfolio.totalGains >= 0 ? "+" : "-"}$${Math.abs(
+        portfolio.totalGains
+      ).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+      subtext: `${
+        portfolio.totalGains >= 0 ? "+" : ""
+      }${portfolio.totalGainsPercent.toFixed(2)}%`,
+      isPositive: portfolio.totalGains >= 0,
+    },
+    cash: {
+      label: "Cash",
+      value: "$15,000.00", // Mock cash balance
+      subtext: "30.0% of Account",
     },
   };
 

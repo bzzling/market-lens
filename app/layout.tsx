@@ -1,8 +1,10 @@
-import "@/app/global.css";
+import "@/app/globals.css";
 import { inter } from "@/app/fonts";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Metadata } from "next";
+import { QueryProvider } from "@/components/providers/QueryProvider";
+import { JotaiProvider } from "@/components/providers/JotaiProvider";
 
 export const metadata: Metadata = {
   title: "Market Lens",
@@ -23,9 +25,13 @@ export default function RootLayout({
       <body
         className={`${inter.className} antialiased flex flex-col min-h-full`}
       >
-        <Navbar />
-        <main className="flex-grow pt-9">{children}</main>
-        <Footer />
+        <QueryProvider>
+          <JotaiProvider>
+            <Navbar />
+            <main className="flex-grow pt-9">{children}</main>
+            <Footer />
+          </JotaiProvider>
+        </QueryProvider>
       </body>
     </html>
   );

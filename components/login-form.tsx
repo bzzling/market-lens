@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/auth-forms/button";
 import { Card, CardContent } from "@/components/ui/auth-forms/card";
 import Input from "@/components/ui/auth-forms/input";
 import { Label } from "@/components/ui/auth-forms/label";
-import { useAuth } from "@/lib/hooks/useAuth";
+import { supabase } from "@/lib/supabaseClient";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -18,7 +18,6 @@ export default function LoginForm({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signInWithEmail, signInWithGithub, resetPassword } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -42,10 +41,14 @@ export default function LoginForm({
     setLoading(true);
 
     try {
-      const { user, session } = await signInWithEmail(email, password);
-      console.log("Login response:", { user, session });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (!session) {
+      if (error) throw error;
+
+      if (!data.session) {
         throw new Error("No session created");
       }
 
@@ -62,7 +65,14 @@ export default function LoginForm({
   const handleGithubSignIn = async () => {
     setError("");
     try {
-      await signInWithGithub();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      
+      if (error) throw error;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to sign in with GitHub"
@@ -80,8 +90,14 @@ export default function LoginForm({
     }
 
     try {
-      await resetPassword(email);
-      setError("Check your email for password reset instructions");
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+      
+      setMessage("Check your email for password reset instructions");
+      setError("");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to send reset email"

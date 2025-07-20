@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/auth-forms/button";
 import { Card, CardContent } from "@/components/ui/auth-forms/card";
 import Input from "@/components/ui/auth-forms/input";
 import { Label } from "@/components/ui/auth-forms/label";
-import { useAuth } from "@/lib/hooks/useAuth";
+import { supabase } from "@/lib/supabaseClient";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -18,7 +18,6 @@ export default function SignupForm({
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signUpWithEmail, signInWithGithub } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,9 +26,19 @@ export default function SignupForm({
     setLoading(true);
 
     try {
-      const signUpData = await signUpWithEmail(email, password, name);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      });
 
-      if (signUpData?.user) {
+      if (error) throw error;
+
+      if (data?.user) {
         router.push(
           "/login?message=Please check your email to verify your account"
         );
@@ -49,7 +58,14 @@ export default function SignupForm({
   const handleGithubSignIn = async () => {
     setError("");
     try {
-      await signInWithGithub();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      
+      if (error) throw error;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to sign in with GitHub"

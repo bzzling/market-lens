@@ -1,45 +1,59 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/utils/supabase/middleware";
+import { updateSession } from "@/lib/supabaseMiddleware";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+
+const protectedRoutes = ["/dashboard", "/learn", "/trade"];
 
 export async function middleware(request: NextRequest) {
-  const res = await updateSession(request);
+  const response = await updateSession(request);
 
-  // fetch the pathname
-  const pathname = request.nextUrl.pathname;
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookies) {
+          cookies.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
 
-  // these routes should redirect to dashboard if the user is authenticated
-  const publicRoutes = ["/", "/login", "/signup"];
-  const authRoutes = ["/auth/callback"];
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const isAuthenticated = res.headers.get("x-user-authenticated") === "true";
+  const isProtectedRoute =
+    request.nextUrl.pathname === "/" ||
+    protectedRoutes.some(
+      (route) => route !== "/" && request.nextUrl.pathname.startsWith(route)
+    );
 
-  // Allow access to auth routes without redirection
-  if (authRoutes.some((route) => pathname.startsWith(route))) {
-    return res;
+  const isPublicRoute =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup");
+
+  if (!user && isProtectedRoute) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    return NextResponse.redirect(redirectUrl);
   }
 
-  // Allow access to public routes when not authenticated
-  if (!isAuthenticated && publicRoutes.includes(pathname)) {
-    return res;
+  if (user && (isPublicRoute || request.nextUrl.pathname === "/")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/dashboard";
+    return NextResponse.redirect(redirectUrl);
   }
 
-  // if user authenticated, redirect to dashboard from public routes
-  if (isAuthenticated && publicRoutes.includes(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return Response.redirect(url);
-  }
-
-  // if not authenticated and trying to access protected routes, redirect to login
-  if (!isAuthenticated && !publicRoutes.includes(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return Response.redirect(url);
-  }
-
-  return res;
+  return response;
 }
 
 export const config = {
-  matcher: ["/", "/login", "/signup", "/dashboard/:path*", "/auth/callback"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|public).*)"],
 };

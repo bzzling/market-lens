@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import { inter } from "@/app/fonts";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/utils/supabase/client";
+import { useAtom } from "jotai";
+import { userAtom } from "@/atoms/user";
+import { supabase } from "@/lib/supabaseClient";
 import {
   HomeIcon,
   DocumentDuplicateIcon,
@@ -16,41 +16,22 @@ import clsx from "clsx";
 
 const dashboardLinks = [
   { name: "Portfolio", href: "/dashboard", icon: HomeIcon },
-  { name: "Trade", href: "/dashboard/trade", icon: DocumentDuplicateIcon },
-  { name: "Learn", href: "/dashboard/learn", icon: BookOpenIcon },
+  { name: "Trade", href: "/trade", icon: DocumentDuplicateIcon },
+  { name: "Learn", href: "/learn", icon: BookOpenIcon },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const isAuthPage = pathname === "/login" || pathname === "/signup";
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { signOut } = useAuth();
-  const supabase = createClient();
+  const [userQuery] = useAtom(userAtom);
 
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
-
-      if (!session && pathname.startsWith("/dashboard")) {
-        router.push("/login");
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase.auth, pathname, router]);
+  const isLoggedIn = !!userQuery.data && !userQuery.isPending;
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await supabase.auth.signOut();
+      router.push("/login");
     } catch (error) {
       console.error("Sign out error:", error);
     }
